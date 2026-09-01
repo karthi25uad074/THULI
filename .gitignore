@@ -1,5 +1,29 @@
-backend/
 frontend/node_modules/
 frontend/dist/
 .env
 *.env
+# Backend
+backend/.venv/
+backend/app/gis/tiles/
+backend/app/gis/osm/
+backend/HydroRIVERS_Asia/
+backend/HydroRIVERS_Asia.zip
+
+# GIS files
+*.tif
+*.tiff
+*.shp
+*.dbf
+*.shx
+*.prj
+*.cpg
+*.pbf
+*.zip
+
+# ML models
+*.joblib
+*.pkl
+
+# Python
+__pycache__/
+*.pyc

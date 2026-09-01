@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "Kodaikanal Government Higher Secondary School Shelter",
+    "lat": 10.2398,
+    "lon": 77.4897,
+    "capacity": 800,
+    "occupied": 120,
+    "elevation": 2125,
+    "medical": true
+  },
+  {
+    "id": 2,
+    "name": "Kodaikanal Community Hall Shelter",
+    "lat": 10.2319,
+    "lon": 77.4828,
+    "capacity": 450,
+    "occupied": 310,
+    "elevation": 2098,
+    "medical": false
+  },
+  {
+    "id": 3,
+    "name": "Perumalmalai Relief Camp",
+    "lat": 10.2745,
+    "lon": 77.5208,
+    "capacity": 600,
+    "occupied": 80,
+    "elevation": 2180,
+    "medical": true
+  }
+]
