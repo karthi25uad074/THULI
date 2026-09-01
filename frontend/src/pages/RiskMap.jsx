@@ -97,9 +97,12 @@ async function fetchSoilMoisture(latitude, longitude) {
 }
 
 async function fetchRiverGauge(latitude, longitude) {
-  const res = await fetch(
-    `http://127.0.0.1:8000/api/risk-prediction?lat=${latitude}&lon=${longitude}`
-  );
+  const API_URL =
+  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
+
+const res = await fetch(
+  `${API_URL}/api/risk-prediction?lat=${latitude}&lon=${longitude}`
+);
 
   // Backend error na exact message kaatu
   if (!res.ok) {
