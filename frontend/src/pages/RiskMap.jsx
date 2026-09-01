@@ -22,7 +22,8 @@ import "leaflet/dist/leaflet.css";
 import "../styles/risk-map.css";
 import "leaflet.heat";
 import { GeoJSON } from "react-leaflet";
-
+const API_URL =
+  import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 const userIcon = new L.Icon({
   iconUrl:
@@ -120,8 +121,8 @@ const res = await fetch(
 }
 async function fetchRiverGeometry(latitude, longitude) {
   const res = await fetch(
-    `http://127.0.0.1:8000/api/river-geometry?lat=${latitude}&lon=${longitude}`
-  );
+  `${API_URL}/api/river-geometry?lat=${lat}&lon=${lon}`
+);
 
   const result = await res.json();
 
