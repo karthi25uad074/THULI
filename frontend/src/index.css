@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+:root {
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    sans-serif;
+
+  color: #f8fafc;
+  background: #050b14;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: #050b14;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+.terrain-badge{
+  margin-top:12px;
+  padding:10px 14px;
+  border-radius:12px;
+  font-weight:700;
+  text-align:center;
+}
+
+.terrain-badge.low{
+  background:#DCFCE7;
+  color:#166534;
+}
+
+.terrain-badge.medium{
+  background:#FED7AA;
+  color:#9A3412;
+}
+
+.terrain-badge.high{
+  background:#FECACA;
+  color:#991B1B;
+}
