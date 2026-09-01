@@ -6,7 +6,12 @@ from shapely.ops import unary_union, linemerge
 DB = Path("app/gis/database/rivers/south_india_river_database.parquet")
 
 # Load once when server starts
-RIVERS = gpd.read_parquet(DB).to_crs(epsg=4326).reset_index(drop=True)
+import os
+
+if os.path.exists(DB):
+    RIVERS = gpd.read_parquet(DB).to_crs(epsg=4326).reset_index(drop=True)
+else:
+    RIVERS = None
 RIVERS_M = RIVERS.to_crs(epsg=3857)
 
 
