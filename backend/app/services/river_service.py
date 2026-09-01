@@ -1,63 +1,84 @@
-from pathlib import Path
-import geopandas as gpd
-import numpy as np
-from shapely.ops import unary_union, linemerge
+import requests
+from geopy.distance import geodesic
 
-DB = Path("app/gis/database/rivers/south_india_river_database.parquet")
-
-# Load once when server starts
-import os
-
-if os.path.exists(DB):
-    RIVERS = gpd.read_parquet(DB).to_crs(epsg=4326).reset_index(drop=True)
-else:
-    RIVERS = None
-RIVERS_M = RIVERS.to_crs(epsg=3857)
-
+OVERPASS_URL = "https://overpass-api.de/api/interpreter"
 
 def get_river_data(lat: float, lon: float):
-    point = gpd.GeoSeries.from_xy([lon], [lat], crs="EPSG:4326")
-    point_m = point.to_crs(epsg=3857)
+    query = f"""
+    [out:json][timeout:15];
+    (
+      way(around:5000,{lat},{lon})["waterway"="river"];
+      way(around:5000,{lat},{lon})["waterway"="stream"];
+    );
+    out center tags;
+    """
 
-    distances = RIVERS_M.distance(point_m.iloc[0])
+    try:
+        response = requests.post(
+            OVERPASS_URL,
+            data=query,
+            headers={"User-Agent": "THULI/1.0"},
+            timeout=20,
+        )
+        response.raise_for_status()
 
-    # Position-based selection (duplicate index problem avoid pannum)
-    pos = int(np.argmin(distances.to_numpy()))
+        data = response.json()
+        elements = data.get("elements", [])
 
-    nearest = RIVERS.iloc[pos]
-    distance_km = float(distances.iloc[pos] / 1000)
+        if not elements:
+            return {
+                "river": "No nearby river found",
+                "hyriv_id": 0,
+                "main_river_id": 0,
+                "distance_km": 999,
+                "gauge_m": 0,
+                "level": 1,
+            }
 
-    river_name = nearest.get("name")
-    if not river_name or str(river_name).strip() == "":
-        river_name = f"River Network {int(nearest['MAIN_RIV'])}"
+        nearest = None
+        nearest_distance = float("inf")
 
-    return {
-        "river": river_name,
-        "hyriv_id": int(nearest["HYRIV_ID"]),
-        "main_river_id": int(nearest["MAIN_RIV"]),
-        "distance_km": round(distance_km, 2),
-        "gauge_m": round(max(0.5, 4 - distance_km / 15), 2),
-        "level": 3 if distance_km < 1 else 2 if distance_km < 5 else 1,
-    }
-from shapely.geometry import Point
-from shapely.ops import unary_union
+        for item in elements:
+            if "center" not in item:
+                continue
 
-def get_river_geometry(lat, lon):
-    point = Point(lon, lat)
+            rlat = item["center"]["lat"]
+            rlon = item["center"]["lon"]
 
-    # Existing working function-la irundhu nearest river info eduthuko
+            d = geodesic((lat, lon), (rlat, rlon)).km
+
+            if d < nearest_distance:
+                nearest_distance = d
+                nearest = item
+
+        river_name = nearest.get("tags", {}).get("name", "Unnamed River")
+
+        return {
+            "river": river_name,
+            "hyriv_id": nearest["id"],
+            "main_river_id": nearest["id"],
+            "distance_km": round(nearest_distance, 2),
+            "gauge_m": round(max(0.5, 4 - nearest_distance / 15), 2),
+            "level": 3 if nearest_distance < 1 else 2 if nearest_distance < 5 else 1,
+        }
+
+    except Exception:
+        return {
+            "river": "River unavailable",
+            "hyriv_id": 0,
+            "main_river_id": 0,
+            "distance_km": 999,
+            "gauge_m": 0,
+            "level": 1,
+        }
+
+
+def get_river_geometry(lat: float, lon: float):
     info = get_river_data(lat, lon)
 
-    # Andha river-oda MAIN_RIV segments mattum eduthuko
-    river_segments = RIVERS[RIVERS["MAIN_RIV"] == info["main_river_id"]]
-
-    # Full river line merge
-    merged = linemerge(unary_union(river_segments.geometry.tolist()))
-    if merged.geom_type == "MultiLineString":
-     merged = max(merged.geoms, key=lambda g: g.length)
     return {
         "name": info["river"],
         "distance": info["distance_km"],
-        "geometry": merged.__geo_interface__,
-        "geometryType": merged.geom_type,
+        "geometry": None,
+        "geometryType": None,
     }
