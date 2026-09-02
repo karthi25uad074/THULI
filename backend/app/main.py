@@ -7,6 +7,7 @@ from app.services.weather_service import get_weather_data
 from app.services.river_service import get_river_data, get_river_geometry
 from app.services.ml_service import predict_flood_risk
 from app.risk_engine.engine import calculate_thuli_risk
+from app.services.soil_service import get_soil_data
 
 app = FastAPI(title="THULI AI Backend")
 
@@ -141,73 +142,19 @@ async def soil(
     lon: float = Query(...)
 ):
     try:
-        url = (
-            "https://api.open-meteo.com/v1/forecast"
-            f"?latitude={lat}"
-            f"&longitude={lon}"
-            "&hourly=soil_moisture_0_to_1cm"
-            "&forecast_days=1"
-        )
-
-        response = requests.get(url, timeout=20)
-
-        if response.status_code == 429:
-            return {
-                "success": True,
-                "moisture": 0.18,
-                "status": "Estimated",
-                "time": "--",
-                "source": "Fallback"
-            }
-
-        response.raise_for_status()
-        data = response.json()
-
-        # SAFE ACCESS
-        hourly = data.get("hourly", {})
-        moisture_list = hourly.get("soil_moisture_0_to_1cm", [])
-        time_list = hourly.get("time", [])
-
-        if not moisture_list:
-            return {
-                "success": True,
-                "moisture": 0.18,
-                "status": "Estimated",
-                "time": "--",
-                "source": "Fallback"
-            }
-
-        moisture = float(moisture_list[0])
-        time = time_list[0] if time_list else "--"
-
-        if moisture >= 0.35:
-            status = "Saturated"
-        elif moisture >= 0.20:
-            status = "Wet"
-        elif moisture >= 0.10:
-            status = "Moist"
-        else:
-            status = "Dry"
+        soil = get_soil_data(lat, lon)
 
         return {
             "success": True,
-            "moisture": moisture,
-            "status": status,
-            "time": time,
-            "source": "Open-Meteo"
+            **soil
         }
 
     except Exception as e:
         return {
-            "success": True,
-            "moisture": 0.18,
-            "status": "Estimated",
-            "time": "--",
-            "source": "Fallback",
-            "debug": str(e)
+            "success": False,
+            "message": str(e),
+            "source": "ISRIC SoilGrids"
         }
-
-
 # ---------------- SEARCH ----------------
 
 @app.get("/api/search")

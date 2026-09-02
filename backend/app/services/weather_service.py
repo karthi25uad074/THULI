@@ -1,9 +1,21 @@
+import time
 import requests
 
 URL = "https://api.open-meteo.com/v1/forecast"
 
+_cache = {}
+CACHE_TIME = 300
+
 
 def get_weather_data(lat, lon):
+    key = f"{round(lat,3)}_{round(lon,3)}"
+
+    now = time.time()
+
+    if key in _cache:
+        if now - _cache[key]["time"] < CACHE_TIME:
+            return _cache[key]["data"]
+
     params = {
         "latitude": lat,
         "longitude": lon,
@@ -12,69 +24,35 @@ def get_weather_data(lat, lon):
         "forecast_days": 1,
     }
 
-    try:
-        response = requests.get(URL, params=params, timeout=20)
-        response.raise_for_status()
+    response = requests.get(URL, params=params, timeout=20)
+    response.raise_for_status()
 
-        data = response.json()
+    data = response.json()
 
-        current = data.get("current", {})
-        hourly = data.get("hourly", {})
+    current = data["current"]
+    hourly = data["hourly"]
 
-        forecast = []
-
-        times = hourly.get("time", [])
-        temps = hourly.get("temperature_2m", [])
-        rain = hourly.get("precipitation", [])
-
-        for i in range(min(24, len(times))):
-            forecast.append(
-                {
-                    "time": times[i],
-                    "temperature": temps[i],
-                    "precipitation": rain[i],
-                }
-            )
-
-        return {
-            "temperature": current.get("temperature_2m", 0),
-            "humidity": current.get("relative_humidity_2m", 0),
-            "windSpeed": current.get("wind_speed_10m", 0),
-            "rain": current.get("rain", 0),
-            "forecast_rain": sum(rain[:24]) if rain else 0,
-            "forecast": forecast,
-            "observationTime": current.get("time", "--"),
-            "source": "Open-Meteo",
-            "latitude": lat,
-            "longitude": lon,
-        }
-
-    except requests.exceptions.HTTPError as e:
-        if e.response is not None and e.response.status_code == 429:
-            return {
-                "temperature": 0,
-                "humidity": 0,
-                "windSpeed": 0,
-                "rain": 0,
-                "forecast_rain": 0,
-                "forecast": [],
-                "observationTime": "--",
-                "source": "Open-Meteo (Rate Limited)",
-                "latitude": lat,
-                "longitude": lon,
+    result = {
+        "temperature": current["temperature_2m"],
+        "humidity": current["relative_humidity_2m"],
+        "windSpeed": current["wind_speed_10m"],
+        "rain": current["rain"],
+        "forecast_rain": sum(hourly["precipitation"][:24]),
+        "forecast": [
+            {
+                "time": hourly["time"][i],
+                "temperature": hourly["temperature_2m"][i],
+                "precipitation": hourly["precipitation"][i],
             }
-        raise
+            for i in range(min(24, len(hourly["time"])))
+        ],
+        "observationTime": current["time"],
+        "source": "Open-Meteo",
+    }
 
-    except Exception:
-        return {
-            "temperature": 0,
-            "humidity": 0,
-            "windSpeed": 0,
-            "rain": 0,
-            "forecast_rain": 0,
-            "forecast": [],
-            "observationTime": "--",
-            "source": "Weather Unavailable",
-            "latitude": lat,
-            "longitude": lon,
-        }
+    _cache[key] = {
+        "time": now,
+        "data": result,
+    }
+
+    return result
