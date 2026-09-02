@@ -7,3 +7,5 @@ supabase==2.18.1
 numpy==2.3.2
 pandas==2.3.2
 joblib==1.5.2
+earthengine-api
+google-auth

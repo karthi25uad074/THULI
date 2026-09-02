@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 import requests
+from app.services.gee_auth import init_earth_engine
 
 from app.gis.terrain import get_dem_terrain
 from app.services.weather_service import get_weather_data
@@ -10,7 +11,9 @@ from app.risk_engine.engine import calculate_thuli_risk
 from app.services.soil_service import get_soil_data
 
 app = FastAPI(title="THULI AI Backend")
-
+@app.on_event("startup")
+async def startup():
+    init_earth_engine()
 # CORS
 app.add_middleware(
     CORSMiddleware,

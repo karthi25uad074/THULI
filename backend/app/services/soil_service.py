@@ -1,65 +1,46 @@
-import requests
+import ee
 
-SOIL_URL = "https://rest.isric.org/soilgrids/v2.0/properties/query"
+# NASA SMAP Daily Soil Moisture (10 km)
+COLLECTION = "NASA_USDA/HSL/SMAP10KM_soil_moisture"
 
-# Nearby offsets (approx 250m–1km)
-OFFSETS = [
-    (0, 0),
-    (0.002, 0),
-    (-0.002, 0),
-    (0, 0.002),
-    (0, -0.002),
-    (0.004, 0),
-    (-0.004, 0),
-    (0, 0.004),
-    (0, -0.004),
-]
+def get_soil_data(lat: float, lon: float):
+    point = ee.Geometry.Point([lon, lat])
 
+    image = (
+        ee.ImageCollection(COLLECTION)
+        .sort("system:time_start", False)
+        .first()
+    )
 
-def get_soil_data(lat, lon):
-    for dlat, dlon in OFFSETS:
-        params = {
-            "lat": lat + dlat,
-            "lon": lon + dlon,
-            "property": "wv0010",
-            "depth": "0-5cm",
-            "value": "mean",
-        }
+    values = image.reduceRegion(
+        reducer=ee.Reducer.first(),
+        geometry=point,
+        scale=10000,
+        bestEffort=True,
+    ).getInfo()
 
-        response = requests.get(SOIL_URL, params=params, timeout=20)
-        response.raise_for_status()
+    if not values:
+        raise Exception("No SMAP data available for this location.")
 
-        data = response.json()
+    # SMAP band (surface soil moisture)
+    moisture = values.get("ssm")
 
-        layers = data.get("properties", {}).get("layers", [])
-        if not layers:
-            continue
+    if moisture is None:
+        raise Exception("SMAP soil moisture unavailable.")
 
-        value = layers[0].get("depths", [{}])[0].get("values", {}).get("mean")
+    if moisture >= 0.35:
+        status = "Saturated"
+    elif moisture >= 0.20:
+        status = "Wet"
+    elif moisture >= 0.10:
+        status = "Moist"
+    else:
+        status = "Dry"
 
-        if value is None:
-            continue
-
-        # SoilGrids conversion factor = divide by 10
-        moisture = value / 10 / 100
-
-        if moisture >= 0.35:
-            status = "Saturated"
-        elif moisture >= 0.20:
-            status = "Wet"
-        elif moisture >= 0.10:
-            status = "Moist"
-        else:
-            status = "Dry"
-
-        return {
-            "moisture": round(moisture, 3),
-            "status": status,
-            "source": "ISRIC SoilGrids",
-            "used_offset": {
-                "lat": dlat,
-                "lon": dlon
-            }
-        }
-
-    raise Exception("No valid SoilGrids pixel found nearby.")
+    return {
+        "moisture": round(float(moisture), 3),
+        "status": status,
+        "source": "NASA SMAP (Earth Engine)",
+        "dataset": "NASA_USDA/HSL/SMAP10KM_soil_moisture",
+        "resolution": "10 km",
+    }
