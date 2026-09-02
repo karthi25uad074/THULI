@@ -1,7 +1,7 @@
 import ee
 
-# NASA SMAP Daily Soil Moisture (10 km)
-COLLECTION = "NASA_USDA/HSL/SMAP10KM_soil_moisture"
+COLLECTION = "NASA/SMAP/SPL4SMGP/008"
+
 
 def get_soil_data(lat: float, lon: float):
     point = ee.Geometry.Point([lon, lat])
@@ -12,18 +12,14 @@ def get_soil_data(lat: float, lon: float):
         .first()
     )
 
-    values = image.reduceRegion(
+    value = image.select("sm_surface").reduceRegion(
         reducer=ee.Reducer.first(),
         geometry=point,
-        scale=10000,
+        scale=11000,
         bestEffort=True,
     ).getInfo()
 
-    if not values:
-        raise Exception("No SMAP data available for this location.")
-
-    # SMAP band (surface soil moisture)
-    moisture = values.get("ssm")
+    moisture = value.get("sm_surface")
 
     if moisture is None:
         raise Exception("SMAP soil moisture unavailable.")
@@ -40,7 +36,8 @@ def get_soil_data(lat: float, lon: float):
     return {
         "moisture": round(float(moisture), 3),
         "status": status,
-        "source": "NASA SMAP (Earth Engine)",
-        "dataset": "NASA_USDA/HSL/SMAP10KM_soil_moisture",
-        "resolution": "10 km",
+        "source": "NASA SMAP L4 (Earth Engine)",
+        "dataset": "NASA/SMAP/SPL4SMGP/008",
+        "resolution": "11 km",
+        "depth": "0-5 cm",
     }
