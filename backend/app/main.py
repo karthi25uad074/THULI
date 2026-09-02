@@ -151,7 +151,6 @@ async def soil(
 
         response = requests.get(url, timeout=20)
 
-        # Rate limit na fallback
         if response.status_code == 429:
             return {
                 "success": True,
@@ -164,6 +163,7 @@ async def soil(
         response.raise_for_status()
         data = response.json()
 
+        # SAFE ACCESS
         hourly = data.get("hourly", {})
         moisture_list = hourly.get("soil_moisture_0_to_1cm", [])
         time_list = hourly.get("time", [])
@@ -197,13 +197,14 @@ async def soil(
             "source": "Open-Meteo"
         }
 
-    except Exception:
+    except Exception as e:
         return {
             "success": True,
             "moisture": 0.18,
             "status": "Estimated",
             "time": "--",
-            "source": "Fallback"
+            "source": "Fallback",
+            "debug": str(e)
         }
 
 
