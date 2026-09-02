@@ -146,7 +146,9 @@ async def soil(
 
         return {
             "success": True,
-            **soil
+            "moisture": soil["moisture"],
+            "status": soil["status"],
+            "source": soil["source"]
         }
 
     except Exception as e:
