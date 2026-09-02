@@ -52,7 +52,7 @@ async function fetchRealWeather(
     setError("");
 
     const res = await fetch(
-      `http://localhost:5000/api/weather?lat=${latitude}&lon=${longitude}`
+      `${API_URL}/api/weather`
     );
 
     const result = await res.json();
@@ -72,7 +72,7 @@ async function fetchRealWeather(
 
 async function fetchElevation(latitude, longitude) {
   const res = await fetch(
-    `http://localhost:5000/api/elevation?lat=${latitude}&lon=${longitude}`
+    `${API_URL}/api/elevation`
   );
 
   const result = await res.json();
@@ -85,7 +85,7 @@ async function fetchElevation(latitude, longitude) {
 }
 async function fetchSoilMoisture(latitude, longitude) {
   const res = await fetch(
-    `http://localhost:5000/api/soil?lat=${latitude}&lon=${longitude}`
+    `${API_URL}/api/soil`
   );
 
   const result = await res.json();
@@ -453,7 +453,7 @@ setRiverGeometry(riverInfo);
 
   try {
    const response = await fetch(
-  `http://localhost:5000/api/search?q=${encodeURIComponent(query)}`
+  `${API_URL}/api/search?q=${encodeURIComponent(query)}`
 );
 
 const result = await response.json();
@@ -475,7 +475,7 @@ setSuggestions(result.data);
       setSearchLoading(true);
 
      const res = await fetch(
-  `http://localhost:5000/api/search?q=${encodeURIComponent(searchQuery)}`
+ `${API_URL}/api/search`
 );
 
 const result = await res.json();
